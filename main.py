@@ -16,9 +16,11 @@ WIDTH = 1300
 screen = pygame.display.set_mode((WIDTH,HEIGHT))
 pygame.display.set_caption("Fight It Out")
 
-bg = pygame.transform.scale(pygame.image.load("images/City2.png"),(1300,700))
 
-sbg = pygame.transform.scale(pygame.image.load("images/a.png"),(1300,700))
+mianBg = pygame.transform.scale(pygame.image.load("images/main.png"),(1300,700))
+startBg = pygame.transform.scale(pygame.image.load("images/start.png"),(1300,700))
+selectBg = pygame.transform.scale(pygame.image.load("images/select.png"),(1300,700))
+
 
 
 #players settings
@@ -44,19 +46,37 @@ class SpriteSheet():
 
 
 
+def spawnPlayer(name):
+    global ifm,pSheet
+    player = pygame.image.load(f"images/sprites/{name}/Idle.png").convert_alpha()
+    ifm = player.get_width()//player.get_height()
+    pSheet = SpriteSheet(player)
+    return player
 
-pname = 'boy'
-player = pygame.image.load(f"images/sprites/{pname}/Idle.png").convert_alpha()
-ifm = player.get_width()//player.get_height()
-pSheet = SpriteSheet(player)
+def playerAttack(name,att):
+    global myAttack
+    myAttack = att
+    return pygame.image.load(f"images/sprites/{name}/a{att}.png").convert_alpha()
+
+player = spawnPlayer('Aetheria')
 
 
-ename = 'girl'
-enemy = pygame.image.load(f"images/sprites/{ename}/Idle.png").convert_alpha()
-eSheet = SpriteSheet(enemy)
-efm = enemy.get_width()//enemy.get_height()
+
+
+def spawnEnemy(name):
+    global efm,eSheet
+    enemy = pygame.image.load(f"images/sprites/{name}/Idle.png").convert_alpha()
+    efm = enemy.get_width()//enemy.get_height()
+    eSheet = SpriteSheet(enemy)
+    return enemy
+
+enemy = spawnEnemy('Aetheria')
+
+
+
+
 '''
-eAttack = pygame.image.load("images/sprites/boy/a1.png").convert_alpha()
+eAttack = pygame.image.load("images/sprites/Zephyr/a1.png").convert_alpha()
 eAttackSheet = SpriteSheet(eAttack)
 '''
 
@@ -85,6 +105,9 @@ class Player(pygame.sprite.Sprite):
             self.state = 'attack'
 
         self.frame += 0.1
+        if pname == 'Elysia' and self.state == 'idle':
+            if int(self.frame%ifm) == 1:
+                self.frame = 2.1
         if self.state == 'idle':
             self.image = pSheet.get_image(int(self.frame % ifm), 128, 128, 3, (0, 0, 0))
 
@@ -138,27 +161,27 @@ enemy = pygame.sprite.GroupSingle()
 enemy.add(Enemy())
 
 def start():
-    screen.blit(sbg,(0,0))
-    pygame.display.update()
+    screen.blit(startBg,(0,0))
+
+def select():
+    screen.blit(selectBg,(0,0))
 
 def window():
-    screen.blit(bg,(0,0))
+    screen.blit(mianBg,(0,0))
     players.draw(screen)
     enemy.draw(screen)
 
-def playerAttack(name,att):
-    global myAttack
-    myAttack = att
-    return pygame.image.load(f"images/sprites/{name}/a{att}.png").convert_alpha()
 
 
+spawned = False
 while  True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+
         if event.type == pygame.KEYDOWN:
-            if gameState == 1 and myAttack == 0:
+            if gameState == 2 and myAttack == 0:
                 if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
                     pAttack = playerAttack(pname,1)
 
@@ -168,19 +191,49 @@ while  True:
                 if event.key == pygame.K_w or event.key == pygame.K_UP:
                     pAttack = playerAttack(pname,3)
 
-                if myAttack != 0:
+                if myAttack != 0: 
                     pAttackSheet = SpriteSheet(pAttack)
                     afm = pAttack.get_width()//pAttack.get_height()
 
-            if event.type == 768:
+            if gameState == 1:
+                if event.key == 49:
+                    pname = 'Zephyr'
+                    spawned = True
+
+                if event.key == 50:
+                    pname = 'Aetheria'
+                    spawned =  True
+
+                if event.key == 51:
+                    pname = 'Nekros'
+                    spawned = True
+
+                if event.key == 52:
+                    pname = 'Elysia'
+                    spawned = True
+
+                if event.key == 53:
+                    pname = 'Synthos'
+                    spawned = True
+
+
+
+                if spawned:
+                    player = spawnPlayer(pname)
+                    gameState = 2
+            if event.key == 13 and gameState == 0:
                 gameState = 1
           
     if gameState == 0:
         start()
-
     if gameState == 1:
+        select()
+
+    if gameState == 2:
         window()
         players.update()
         enemy.update()
-        pygame.display.update()
+
+
+    pygame.display.update()
     clock.tick(60)
