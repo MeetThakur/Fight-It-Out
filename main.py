@@ -9,6 +9,7 @@ clock = pygame.time.Clock()
 pygame.init()
 gameState = 0
 
+pname = 'Zephyr'
 
 HEIGHT = 700
 WIDTH = 1300
@@ -29,7 +30,7 @@ playerWidth = 60
 
 playerX = 0
 playerY = 230
-enemyX = 950
+enemyX = 900
 enemyY = 230
 
 
@@ -93,11 +94,14 @@ class Player(pygame.sprite.Sprite):
         self.state = state
         
         self.image = pSheet.get_image(self.frame, 128, 128, 0, (0, 0, 0))
-        self.rect = self.image.get_rect(center = (playerX,playerY))
+        self.image = pygame.transform.flip(self.image, True, False)
+        self.rect = self.image.get_rect(center = (450,playerY))
 
+            
     def animate(self):
         global myAttack,flag,ifm
- 
+        if gameState == 2:
+            self.rect = self.image.get_rect(center = (200,420))
         if myAttack != 0:
             if self.frame != 0 and flag == True:
                 self.frame = 0
@@ -171,9 +175,10 @@ def window():
     players.draw(screen)
     enemy.draw(screen)
 
+ename = 'Nekros'
+chrnum = 1
+chrdict = {1:'Zephyr',2:'Elysia',3:'Aetheria',4:'Nekros',5:'Synthos'}
 
-
-spawned = False
 while  True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -195,39 +200,35 @@ while  True:
                     pAttackSheet = SpriteSheet(pAttack)
                     afm = pAttack.get_width()//pAttack.get_height()
 
+
             if gameState == 1:
-                if event.key == 49:
-                    pname = 'Zephyr'
-                    spawned = True
-
-                if event.key == 50:
-                    pname = 'Aetheria'
-                    spawned =  True
-
-                if event.key == 51:
-                    pname = 'Nekros'
-                    spawned = True
-
-                if event.key == 52:
-                    pname = 'Elysia'
-                    spawned = True
-
-                if event.key == 53:
-                    pname = 'Synthos'
-                    spawned = True
-
-
-
-                if spawned:
-                    player = spawnPlayer(pname)
+                if event.key == pygame.K_RIGHT:
+                    chrnum = (chrnum%5)+1
+                elif event.key == pygame.K_LEFT:
+                    if chrnum == 1:
+                        chrnum = 5
+                    else:
+                        chrnum -= 1
+                pname = chrdict[chrnum]
+                player = spawnPlayer(pname)
+                playerX = 0
+                if event.key == 13:
                     gameState = 2
+
+
+
             if event.key == 13 and gameState == 0:
                 gameState = 1
           
+
+
+
     if gameState == 0:
         start()
     if gameState == 1:
         select()
+        players.draw(screen)
+        players.update()
 
     if gameState == 2:
         window()
