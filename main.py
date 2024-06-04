@@ -71,7 +71,7 @@ def spawnEnemy(name):
     eSheet = SpriteSheet(enemy)
     return enemy
 
-enemy = spawnEnemy('Aetheria')
+enemy = spawnEnemy('Nekros')
 
 
 
@@ -95,7 +95,7 @@ class Player(pygame.sprite.Sprite):
         
         self.image = pSheet.get_image(self.frame, 128, 128, 0, (0, 0, 0))
         self.image = pygame.transform.flip(self.image, True, False)
-        self.rect = self.image.get_rect(center = (450,playerY))
+        self.rect = self.image.get_rect(center = (playerX,playerY))
 
             
     def animate(self):
@@ -125,6 +125,7 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         self.animate()
+
 
 class Enemy(pygame.sprite.Sprite): 
     def __init__(self,state='idle'):
@@ -170,6 +171,7 @@ def start():
 def select():
     screen.blit(selectBg,(0,0))
 
+
 def window():
     screen.blit(mianBg,(0,0))
     players.draw(screen)
@@ -185,8 +187,10 @@ while  True:
             pygame.quit()
             sys.exit()
 
+
+
         if event.type == pygame.KEYDOWN:
-            if gameState == 2 and myAttack == 0:
+            if gameState == 3 and myAttack == 0:
                 if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
                     pAttack = playerAttack(pname,1)
 
@@ -201,21 +205,34 @@ while  True:
                     afm = pAttack.get_width()//pAttack.get_height()
 
 
+
             if gameState == 1:
-                if event.key == pygame.K_RIGHT:
+                if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     chrnum = (chrnum%5)+1
-                elif event.key == pygame.K_LEFT:
+                elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
                     if chrnum == 1:
                         chrnum = 5
                     else:
                         chrnum -= 1
-                pname = chrdict[chrnum]
+                pname = chrdict[chrnum]    
                 player = spawnPlayer(pname)
-                playerX = 0
-                if event.key == 13:
+
+                if event.key == K_SPACE:
                     gameState = 2
 
+            if gameState == 2:
+                if event.key == pygame.K_RIGHT:
+                    chrnum = (chrnum%5)+1
+                if event.key == pygame.K_LEFT:
+                    if chrnum == 1:
+                        chrnum = 5
+                    else:
+                        chrnum -= 1
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == 13:
+                        gameState = 3
 
+                spawnEnemy(chrdict[chrnum])
 
             if event.key == 13 and gameState == 0:
                 gameState = 1
@@ -223,17 +240,30 @@ while  True:
 
 
 
+    #homescreen
     if gameState == 0:
         start()
+
+    #player selection
     if gameState == 1:
         select()
         players.draw(screen)
         players.update()
 
+
+    #enemy selection
     if gameState == 2:
+        select()
+        players.draw(screen)
+        players.update()
+        enemy.draw(screen)
+        enemy.update()
+
+    if gameState == 3:
         window()
         players.update()
         enemy.update()
+
 
 
     pygame.display.update()
