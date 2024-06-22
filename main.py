@@ -9,7 +9,7 @@ clock = pygame.time.Clock()
 pygame.init()
 gameState = 0
 
-pname = 'Zephyr'
+playerName = 'Zephyr'
 
 HEIGHT = 700
 WIDTH = 1300
@@ -33,8 +33,8 @@ playerY = 230
 enemyX = 900
 enemyY = 230
 
-
-
+playerHealth = 100
+enemyHealth = 100
 
 class SpriteSheet():
     def __init__(self, image):
@@ -45,45 +45,44 @@ class SpriteSheet():
         image = pygame.transform.scale(image, (width * scale, height * scale))
         return image
 
-
-
 def spawnPlayer(name):
-    global ifm,pSheet
+    global playerFrames,playerSheet
     player = pygame.image.load(f"images/sprites/{name}/Idle.png").convert_alpha()
-    ifm = player.get_width()//player.get_height()
-    pSheet = SpriteSheet(player)
+    playerFrames = player.get_width()//player.get_height()
+    playerSheet = SpriteSheet(player)
     return player
 
-def playerAttack(name,att):
-    global myAttack
-    myAttack = att
-    return pygame.image.load(f"images/sprites/{name}/a{att}.png").convert_alpha()
-
-player = spawnPlayer('Aetheria')
 
 
+def playerAttack(name,ty):
+    global playerAttackType
+    playerAttackType = ty
+    return pygame.image.load(f"images/sprites/{name}/a{ty}.png").convert_alpha()
 
 
 def spawnEnemy(name):
-    global efm,eSheet
+    global enemyFrames,enemySheet
     enemy = pygame.image.load(f"images/sprites/{name}/Idle.png").convert_alpha()
-    efm = enemy.get_width()//enemy.get_height()
-    eSheet = SpriteSheet(enemy)
+    enemyFrames = enemy.get_width()//enemy.get_height()
+    enemySheet = SpriteSheet(enemy)
     return enemy
 
+
+def enemyAttack(name,ty):
+    global enemyAttackType
+    enemyAttackType = ty
+    return pygame.image.load(f"images/sprites/{name}/a{ty}.png").convert_alpha()
+
+
+
+player = spawnPlayer('Aetheria')
 enemy = spawnEnemy('Nekros')
 
 
-
-
-'''
-eAttack = pygame.image.load("images/sprites/Zephyr/a1.png").convert_alpha()
-eAttackSheet = SpriteSheet(eAttack)
-'''
-
-
-myAttack = 0
-flag = True
+playerAttackType = 0
+enemyAttackType = 0
+isPlayerAttacking = False
+isEnemyAttaking = False
 
 
 
@@ -93,38 +92,36 @@ class Player(pygame.sprite.Sprite):
         self.frame = 0
         self.state = state
         
-        self.image = pSheet.get_image(self.frame, 128, 128, 0, (0, 0, 0))
+        self.image = playerSheet.get_image(self.frame, 128, 128, 0, (0, 0, 0))
         self.image = pygame.transform.flip(self.image, True, False)
         self.rect = self.image.get_rect(center = (playerX,playerY))
 
-            
-    def animate(self):
-        global myAttack,flag,ifm
-        if gameState == 2:
-            self.rect = self.image.get_rect(center = (200,420))
-        if myAttack != 0:
-            if self.frame != 0 and flag == True:
-                self.frame = 0
-                flag = False
-            self.state = 'attack'
-
-        self.frame += 0.1
-        if pname == 'Elysia' and self.state == 'idle':
-            if int(self.frame%ifm) == 1:
-                self.frame = 2.1
-        if self.state == 'idle':
-            self.image = pSheet.get_image(int(self.frame % ifm), 128, 128, 3, (0, 0, 0))
-
-        if self.state == 'attack':
-            self.image = pAttackSheet.get_image(int(self.frame % afm), 128, 128, 3, (0, 0, 0))
-            if self.frame >= afm:
+    def attack(self):
+        global playerFrames,playerAttackSheet,isPlayerAttacking,playerAttackType
+        self.image = playerAttackSheet.get_image(int(self.frame % attackFrames), 128, 128, 3, (0, 0, 0))
+        print(self.frame)
+        if isPlayerAttacking == True and self.frame != 0:
+            self.frame = 0
+            isPlayerAttacking = False
+        if self.frame >= attackFrames:
                 self.state = 'idle'
                 self.frame = 0
-                myAttack = 0
-                flag = True
+                playerAttackType = 0
+        self.frame += 0.1
+
+    def idle(self):
+        global isPlayerAttacking
+        self.image = playerSheet.get_image(int(self.frame % playerFrames), 128, 128, 3, (0, 0, 0))
+        self.frame += 0.1
+        if isPlayerAttacking:
+            self.state = 'attack'
+
 
     def update(self):
-        self.animate()
+        if self.state == 'idle':
+            self.idle()
+        elif self.state == 'attack':
+            self.attack()
 
 
 class Enemy(pygame.sprite.Sprite): 
@@ -133,26 +130,32 @@ class Enemy(pygame.sprite.Sprite):
         self.frame = 0
         self.state = state
         
-        self.image = eSheet.get_image(self.frame, 128, 128, 0, (0, 0, 0))
+        self.image = enemySheet.get_image(self.frame, 128, 128, 0, (0, 0, 0))
         self.image = pygame.transform.flip(self.image, True, False)
         self.rect = self.image.get_rect(center = (enemyX,enemyY))
 
-    def animate(self):
+    def idle(self):
+        global isEnemyAttaking
+        self.image = pygame.transform.flip(enemySheet.get_image(int(self.frame % enemyFrames),128, 128, 3, (0,0,0)), True, False)
         self.frame += 0.1
-        if self.state == 'idle':
-            self.image = pygame.transform.flip(eSheet.get_image(int(self.frame % efm), 128, 128, 3, (0, 0, 0)), True, False)
+        if isEnemyAttaking:
+            self.state = 'attack'
 
-        if self.state == 'attack':
-            self.image = pAttackSheet.get_image(int(self.frame % afm), 128, 128, 3, (0, 0, 0))
-            if self.frame >= afm:
+    def attack():
+        global eshee,isPlayerAttacking,playerAttackType
+        self.image = eshee.get_image(int(self.frame % attackFrames), 128, 128, 3, (0, 0, 0))
+        print(self.frame)
+        if isPlayerAttacking == True and self.frame != 0:
+            self.frame = 0
+            isPlayerAttacking = False
+        if self.frame >= attackFrames:
                 self.state = 'idle'
                 self.frame = 0
-                myAttack = 0
-                flag = True
+                playerAttackType = 0
+        self.frame += 0.1
 
     def update(self):
-        self.animate()
-
+        self.idle()
 
 
 
@@ -177,8 +180,16 @@ def window():
     players.draw(screen)
     enemy.draw(screen)
 
+def displayHealth():
+    font = pygame.font.Font(None, 50)
+    text = font.render(f'Player Health: {playerHealth}', True,"white", (0, 0, 0))
+    screen.blit(text, (10, 10))
+    text = font.render(f'Enemy Health: {enemyHealth}', True,"white", (0, 0, 0))
+    screen.blit(text, (970, 10))
+
+
 ename = 'Nekros'
-chrnum = 1
+chrnum = 3
 chrdict = {1:'Zephyr',2:'Elysia',3:'Aetheria',4:'Nekros',5:'Synthos'}
 
 while  True:
@@ -190,20 +201,21 @@ while  True:
 
 
         if event.type == pygame.KEYDOWN:
-            if gameState == 3 and myAttack == 0:
+            if gameState == 3 and playerAttackType == 0:
                 if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
-                    pAttack = playerAttack(pname,1)
+                    pAttack = playerAttack(playerName,1)
 
                 if event.key == pygame.K_a or event.key == pygame.K_LEFT:
-                    pAttack = playerAttack(pname,2)
+                    pAttack = playerAttack(playerName,2)
 
                 if event.key == pygame.K_w or event.key == pygame.K_UP:
-                    pAttack = playerAttack(pname,3)
+                    pAttack = playerAttack(playerName,3)
 
-                if myAttack != 0: 
-                    pAttackSheet = SpriteSheet(pAttack)
-                    afm = pAttack.get_width()//pAttack.get_height()
-
+                if playerAttackType != 0: 
+                    isPlayerAttacking = True
+                    eAttcak = (enemyName,r)
+                    playerAttackSheet = SpriteSheet(pAttack)
+                    attackFrames = pAttack.get_width()//pAttack.get_height()
 
 
             if gameState == 1:
@@ -214,16 +226,16 @@ while  True:
                         chrnum = 5
                     else:
                         chrnum -= 1
-                pname = chrdict[chrnum]    
-                player = spawnPlayer(pname)
+                playerName = chrdict[chrnum]    
+                player = spawnPlayer(playerName)
 
                 if event.key == K_SPACE:
                     gameState = 2
 
             if gameState == 2:
-                if event.key == pygame.K_RIGHT:
+                if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     chrnum = (chrnum%5)+1
-                if event.key == pygame.K_LEFT:
+                if event.key == pygame.K_LEFT or event.key == pygame.K_a:
                     if chrnum == 1:
                         chrnum = 5
                     else:
@@ -232,13 +244,12 @@ while  True:
                     if event.key == 13:
                         gameState = 3
 
-                spawnEnemy(chrdict[chrnum])
+                enemyName = chrdict[chrnum]
+                spawnEnemy(enemyName)
 
             if event.key == 13 and gameState == 0:
                 gameState = 1
           
-
-
 
     #homescreen
     if gameState == 0:
@@ -249,7 +260,6 @@ while  True:
         select()
         players.draw(screen)
         players.update()
-
 
     #enemy selection
     if gameState == 2:
@@ -263,8 +273,7 @@ while  True:
         window()
         players.update()
         enemy.update()
-
-
+        displayHealth()
 
     pygame.display.update()
     clock.tick(60)
