@@ -20,16 +20,15 @@ pygame.display.set_caption("Fight It Out")
 mianBg = pygame.transform.scale(pygame.image.load("images/main.png"),(WIDTH,HEIGHT))
 startBg = pygame.transform.scale(pygame.image.load("images/start.png"),(WIDTH,HEIGHT))
 selectBg = pygame.transform.scale(pygame.image.load("images/select.png"),(WIDTH,HEIGHT))
-
-
-
+end1 = pygame.transform.scale(pygame.image.load("images/end1.png"),(WIDTH,HEIGHT))
+end2 = pygame.transform.scale(pygame.image.load("images/end2.png"),(WIDTH,HEIGHT))
 #players settings
 playerHieght = 60
 playerWidth = 60
 
-playerX = -250
+playerX = -100
 playerY = 230
-enemyX = 670
+enemyX = 520
 enemyY = 230
 
 playerHealth = 100
@@ -51,15 +50,14 @@ def spawnPlayer(name):
     playerSheet = SpriteSheet(player)
     return player
 
-
+def deathImage(name):
+    return pygame.image.load(f"images/sprites/{name}/death.png").convert_alpha()
 
 def attack(name,ty):
     return pygame.image.load(f"images/sprites/{name}/a{ty}.png").convert_alpha()
 
 def hitImage(name):
     return pygame.image.load(f"images/sprites/{name}/hit.png").convert_alpha()
-
-
 
 def spawnEnemy(name):
     global enemyFrames,enemySheet
@@ -72,7 +70,7 @@ def spawnEnemy(name):
 playerAttackType = 0
 enemyAttackType = 0
 
-player = spawnPlayer('Luminaar')
+player = spawnPlayer('Seraphina')
 enemy = spawnEnemy('Volcanus')
 
 pFrameCheck = True
@@ -83,6 +81,15 @@ enemyAttacking = False
 
 enemyGotHit =- False
 playerGotHit = False
+
+playerDied = False
+enemyDied = False
+
+edeathFrameCheck = False
+pdeathFrameCheck = False
+
+fonts = pygame.font.Font("font/font.otf",30)
+hitcheck = True
 
 class Player(pygame.sprite.Sprite): 
     def __init__(self,state='idle'):
@@ -102,30 +109,45 @@ class Player(pygame.sprite.Sprite):
             pFrameCheck = False
         if self.frame >= playerAttackframes:
                 if playerAttackType == 1:
-                    enemyHealth -= r.randint(10,20)
+                    a = -(r.randint(5,30))
+                    if enemyHealth + a < 0:
+                        enemyHealth = 0
+                    else:
+                        enemyHealth += a
                     enemyGotHit = True
+
+
                 elif playerAttackType == 2:
-                    enemyHealth -= r.randint(0,30)
+                    a = -(r.randint(10,20))
+                    if enemyHealth + a < 0:
+                        enemyHealth = 0
+                    else:
+                        enemyHealth += a
                     enemyGotHit = True
+
                 elif playerAttackType == 3:
                     playerHealth += r.randint(5,15)
-                self.state = 'idle'
-                self.frame = 0
+                    enemyAttacking = True
+                
 
                 pFrameCheck = True
                 playerAttacking = False
                 playerAttackType = 0
+                self.state = 'idle'
+                self.frame = 0
+
         self.frame += 0.1
 
     def idle(self):
-        global playerAttacking,playerGotHit
+        global playerAttacking,playerGotHit,playerDied,enemyGotHit
         self.image = playerSheet.get_image(int(self.frame % playerFrames), 288, 128, 3, (0, 0, 0))
         self.frame += 0.1
         if playerAttacking:
             self.state = 'attack'
         if playerGotHit:
-            print("OKKk")
             self.state = 'hit'
+        if playerDied:
+            self.state = 'death'
 
     def hit(self):
         global pHitFrames,pHitSheet,enemyAttacking,playerGotHit
@@ -139,6 +161,20 @@ class Player(pygame.sprite.Sprite):
             self.frame = 0
             self.state = 'idle'
 
+    def death(self):
+        global pDeathSheet,pDeathFrames,gameState,playerDied,pdeathFrameCheck,playerHealth,enemyHealth
+        self.image = pDeathSheet.get_image(int(self.frame % pDeathFrames), 288, 128, 3, (0, 0, 0))
+        if self.frame != 0 and pdeathFrameCheck == False:
+            self.frame = 0
+            pdeathFrameCheck = True
+        self.frame += 0.1
+        if self.frame > eDeathFrames:
+            self.frame = 0
+            self.state = 'idle'
+            pdeathFrameCheck = False
+            playerDied = False
+            gameState = 4
+
 
 
     def update(self):
@@ -148,6 +184,8 @@ class Player(pygame.sprite.Sprite):
             self.idle()
         elif self.state == 'attack':
             self.attack()
+        elif self.state == 'death':
+            self.death()
 
 
 
@@ -162,25 +200,49 @@ class Enemy(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center = (enemyX,enemyY))
 
     def idle(self):
-        global enemyAttacking,enemyGotHit
+        global enemyAttacking,enemyGotHit,enemyDied
         self.image = pygame.transform.flip(enemySheet.get_image(int(self.frame % enemyFrames),288, 128, 3, (0,0,0)), True, False)
         self.frame += 0.1
         if enemyAttacking:
             self.state = 'attack'
         if enemyGotHit:
             self.state = 'hit'
+        if enemyDied:
+            self.state = 'death'
 
     def hit(self):
-        global eHitFrames,eHitSheet,enemyAttacking,enemyGotHit
-        if self.frame != 0 and enemyGotHit == True:
+        global eHitFrames,eHitSheet,enemyAttacking,hitcheck,playerAttacking,enemyGotHit
+        if self.frame != 0 and hitcheck == True:
             self.frame = 0
-            enemyGotHit = False
-        self.image = pygame.transform.flip(eHitSheet.get_image(int(self.frame%pHitFrames),288,128,3,(0,0,0)),True,False)
+            hitcheck = False
+        self.image = pygame.transform.flip(eHitSheet.get_image(int(self.frame%eHitFrames),288,128,3,(0,0,0)),True,False)
         self.frame += 0.1
         if self.frame > eHitFrames:
+            enemyGotHit = False
             enemyAttacking = True
             self.frame = 0
             self.state = 'idle'
+
+
+
+    def death(self):
+        global eDeathSheet,eDeathFrames,gameState,enemyDied,edeathFrameCheck,playerHealth,enemyHealth
+        self.image = eDeathSheet.get_image(int(self.frame % eDeathFrames), 288, 128, 3, (0, 0, 0))
+        if self.frame != 0 and edeathFrameCheck == False:
+            self.frame = 0
+            edeathFrameCheck = True
+        self.frame += 0.1
+        if self.frame > eDeathFrames:
+            self.frame = 0
+            edeathFrameCheck = False
+            enemyDied = False
+            self.state = 'idle'
+            gameState = 4
+
+
+
+
+    
 
     def attack(self):
         global enemyAttackSheet,eFrameChcek,playerAttacking,enemyAttacking,playerHealth,enemyAttackType,enemyHealth,playerGotHit
@@ -190,10 +252,18 @@ class Enemy(pygame.sprite.Sprite):
             eFrameChcek = False
         if self.frame >= enemyAttackframes:
                 if enemyAttackType == 1:
-                    playerHealth -= r.randint(15,25)
+                    a = -r.randint(15,25)
+                    if playerHealth + a < 0:
+                        playerHealth = 0
+                    else:
+                        playerHealth += a
                     playerGotHit = True
                 elif enemyAttackType == 2:
-                    playerHealth -= r.randint(5,35)
+                    a = -r.randint(5,35)
+                    if playerHealth + a < 0:
+                        playerHealth = 0
+                    else:
+                        playerHealth += a
                     playerGotHit = True
                 elif enemyAttackType == 3:
                     enemyHealth += r.randint(10,20)
@@ -204,16 +274,15 @@ class Enemy(pygame.sprite.Sprite):
                 self.frame = 0
         self.frame += 0.1
 
-    def update(self):
+    def update(self):   
         if self.state == 'hit':
             self.hit()
         elif self.state == 'idle':
             self.idle()
-        elif self.state == 'attack':
+        elif self.state == 'attack' and enemyHealth > 0:
             self.attack()
-
-
-
+        elif self.state == 'death':
+            self.death()
 
 
 
@@ -232,21 +301,31 @@ def select():
     screen.blit(selectBg,(0,0))
 
 
+
+
 def window():
     screen.blit(mianBg,(0,0))
     players.draw(screen)
     enemy.draw(screen)
 
 def displayHealth():
-    font = pygame.font.Font(None, 50)
-    text = font.render(f'Player Health: {playerHealth}', True,"white", (0, 0, 0))
-    screen.blit(text, (10, 10))
-    text = font.render(f'Enemy Health: {enemyHealth}', True,"white", (0, 0, 0))
-    screen.blit(text, (970, 10))
+    pimg = pygame.transform.scale(pygame.image.load(f"images/sprites/{playerName}/dp.png"),(80,80 ))
+    eimg = pygame.transform.scale(pygame.image.load(f"images/sprites/{enemyName}/dp.png"),(80,80 ))
+    text = fonts.render(f'{playerName}', True,"black")
+    health = fonts.render(f'Health: {playerHealth}', True,"black")
+    screen.blit(health, (340, 80))
+    screen.blit(text, (340, 115))
+    screen.blit(pimg,(250,70))
+    text = fonts.render(f'{enemyName}', True,"black")
+    health = fonts.render(f'Health: {enemyHealth}', True,"black")
+    screen.blit(health, (800, 80))
+    screen.blit(text, (800, 115))
+    screen.blit(eimg,(990,70))
 
 
-enemyName = 'Ferrus'
-chrnum = 3
+enemyName = 'Volcanus'
+enum = 6
+pnum = 3
 chrdict = {1:'Ferrus',2:'Luminaar',3:'Seraphina',4:'Verdant',5:'Stonefist',6:'Volcanus',7:'Whispyr'}
 
 while  True:
@@ -254,7 +333,6 @@ while  True:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-
 
 
         if event.type == pygame.KEYDOWN:
@@ -268,57 +346,66 @@ while  True:
                 if event.key == pygame.K_w or event.key == pygame.K_UP:
                     playerAttackType = 3
 
-                if playerAttackType != 0 and enemyAttacking == False: 
-
+                if playerAttackType != 0 and enemyAttacking == False and enemyGotHit == False: 
                     enemyAttackType = r.randint(1,3)
                     playerAttacking = True
+
                     eAttack = attack(enemyName,enemyAttackType)
                     pAttack = attack(playerName,playerAttackType)
-                    pHit = hitImage(playerName)
-                    eHit = hitImage(enemyName)
-
                     playerAttackSheet = SpriteSheet(pAttack)
                     enemyAttackSheet = SpriteSheet(eAttack)
                     playerAttackframes = pAttack.get_width()//288
                     enemyAttackframes = eAttack.get_width()//288
 
+                    pHit = hitImage(playerName)
+                    eHit = hitImage(enemyName)
                     pHitSheet = SpriteSheet(pHit)
-                    pHitFrames = pHit.get_width()/288
-                    eHitFrames = eHit.get_width()/288
-
                     eHitSheet = SpriteSheet(eHit)
+                    pHitFrames = pHit.get_width()//288
+                    eHitFrames = eHit.get_width()//288
+
+                    pDeath = deathImage(playerName)
+                    eDeath = deathImage(enemyName)
+                    pDeathSheet = SpriteSheet(pDeath)
+                    eDeathSheet = SpriteSheet(eDeath)
+                    pDeathFrames = pDeath.get_width()//288
+                    eDeathFrames = eDeath.get_width()//288
 
 
             if gameState == 1:
                 if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                    chrnum = (chrnum%7)+1
+                    pnum = (pnum%7)+1
                 elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                    if chrnum == 1:
-                        chrnum = 5
+                    if pnum == 1:
+                        pnum = 5
                     else:
-                        chrnum -= 1
-                playerName = chrdict[chrnum]    
+                        pnum -= 1
+                playerName = chrdict[pnum]    
                 player = spawnPlayer(playerName)
 
-                if event.key == K_SPACE:
+                if event.key == K_RETURN:
                     gameState = 2
+                    lastKeytime = pygame.time.get_ticks()
 
             if gameState == 2:
                 if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                    chrnum = (chrnum%7)+1
+                    enum = (enum%7)+1
                 if event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                    if chrnum == 1:
-                        chrnum = 5
+                    if enum == 1:
+                        enum = 5
                     else:
-                        chrnum -= 1
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == 13:
-                        gameState = 3
+                        enum -= 1
 
-                enemyName = chrdict[chrnum]
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_RETURN]:
+                    currentKeyTime = pygame.time.get_ticks()
+                    if currentKeyTime - lastKeytime > 300:
+                        gameState += 1
+
+                enemyName = chrdict[enum]
                 spawnEnemy(enemyName)
 
-            if event.key == 13 and gameState == 0:
+            if event.key == pygame.K_RETURN and gameState == 0:
                 gameState = 1
           
 
@@ -348,16 +435,27 @@ while  True:
         displayHealth()  
         if enemyHealth <= 0 or playerHealth <= 0:
             playerGotHit,enemyGotHit = False,False
-            gameState = 4
+            enemyAttacking = False
+            playerAttacking = False
+            if playerHealth <= 0:
+                playerDied = True
+                endscreen = 1
+            if enemyHealth <= 0:
+                enemyDied = True
+                endscreen = 2
 
     #gameover screen
     if gameState == 4:
-        enemyHealth = 100
-        playerHealth = 100
-        screen.fill('black')
+        enemyDied,playerDied = False,False  
+        if endscreen==1:
+            screen.blit(end2,(0,0))
+        elif endscreen == 2:
+            screen.blit(end1,(0,0))
+        enemyHealth = 1
+        playerHealth = 1
         if pygame.key.get_pressed()[pygame.K_RETURN]:
             gameState = 0
 
 
     pygame.display.update()
-    clock.tick(120)
+    clock.tick(300)
