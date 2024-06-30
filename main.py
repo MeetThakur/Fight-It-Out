@@ -79,7 +79,7 @@ eFrameChcek = True
 playerAttacking = False
 enemyAttacking = False    
 
-enemyGotHit =- False
+enemyGotHit = False
 playerGotHit = False
 
 playerDied = False
